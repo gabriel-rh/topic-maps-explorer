@@ -1,0 +1,78 @@
+ private createCustomTreeItem(
+    topicMapFile: string,
+    parentDir: string = ''
+  ): CustomTreeItem {
+    const treeItem = new CustomTreeItem(
+      topicMapFile,
+      vscode.TreeItemCollapsibleState.Collapsed
+    );
+
+    const workspaceFolder = vscode.workspace.workspaceFolders
+      ? vscode.workspace.workspaceFolders[0]
+      : undefined;
+
+    if (workspaceFolder) {
+      const topicMapsDirectory = vscode.Uri.joinPath(
+        workspaceFolder.uri,
+        parentDir,
+        topicMapFile
+      );
+
+      return vscode.workspace.fs
+        .readFile(topicMapsDirectory)
+        .then(buffer => buffer.toString())
+        .then(content => {
+          try {
+            // Use (yaml as any).loadAll to handle multiple documents
+            const documents = (yaml as any).loadAll(content);
+
+            if (documents) {
+              const topics: TopicMap[] = Array.from(
+                documents as IterableIterator<TopicMap>
+              );
+
+              if (topics && Array.isArray(topics)) {
+                treeItem.children = topics.map(childTopic =>
+                  this.createCustomTreeItem(childTopic, parentDir ? `${parentDir}/${topic.Dir}` : topic.Dir)
+                );
+              }
+            }
+          } catch (error) {
+            console.error('Error parsing topic map file:', error);
+          }
+        });
+    }
+
+    return treeItem;
+  }
+
+  private createCustomTreeItem(
+    topic: TopicMap,
+    parentDir: string = ''
+  ): CustomTreeItem {
+    const treeItem = new CustomTreeItem(
+      topic.Name,
+      vscode.TreeItemCollapsibleState.Collapsed
+    );
+
+    if (topic.Topics && Array.isArray(topic.Topics)) {
+      treeItem.children = topic.Topics.map(childTopic =>
+        this.createCustomTreeItem(childTopic, parentDir ? `${parentDir}/${topic.Dir}` : topic.Dir)
+      );
+    }
+
+    if (workspaceFolder) {
+      const topicFolderPath = parentDir
+        ? vscode.Uri.joinPath(workspaceFolder.uri, parentDir, topic.Dir)
+        : vscode.Uri.joinPath(workspaceFolder.uri, topic.Dir || '');
+
+      treeItem.resourceUri = topic.File
+        ? vscode.Uri.joinPath(topicFolderPath, `${topic.File}.adoc`)
+        : vscode.Uri.parse(''); // Set to an empty Uri if topic.File is undefined
+    } else {
+      treeItem.resourceUri = vscode.Uri.parse(''); // Set to an empty Uri if workspaceFolder is undefined
+    }
+
+    return treeItem;
+  }
+}
