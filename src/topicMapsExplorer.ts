@@ -28,6 +28,8 @@ export class TopicMapsExplorer
     CustomTreeItem | undefined
   > = this._onDidChangeTreeData.event;
 
+  private uriToTreeItemMap: Map<string, CustomTreeItem> = new Map();
+
   constructor(private context: vscode.ExtensionContext) {}
 
   refresh(): void {
@@ -107,8 +109,56 @@ export class TopicMapsExplorer
     } 
     else if (element.children)
     {
+      console.log("getChildren: " + element.label )      
       return element.children;
     }
+    else if (element && element.resourceUri && element.resourceUri.toString() != 'invalid:') {
+      // Logic to dynamically add children nodes for the given resourceUri
+      // ...
+  
+      console.log("openFile:" + element.resourceUri)
+
+      vscode.workspace.fs.readFile(element.resourceUri).then(buffer => {
+        const fileContent = buffer.toString();
+        const includes = this.findIncludes(fileContent);
+  
+        // Create new children nodes based on includes
+        const includeNodes = includes.map(include => {
+          // Create CustomTreeItem instances based on include paths
+          const modItem =  new CustomTreeItem(include, vscode.TreeItemCollapsibleState.None);
+
+
+          const workspaceFolders = vscode.workspace.workspaceFolders;
+          const modulesDirectory = workspaceFolders
+            ? vscode.Uri.joinPath(workspaceFolders[0].uri, 'modules')
+            : undefined;  
+
+          if (modulesDirectory)
+          {
+            modItem.resourceUri = vscode.Uri.joinPath(modulesDirectory, include);  
+            modItem.command = {
+              command: 'vscode.open',
+              title: 'Open File',
+              arguments: [modItem.resourceUri]          
+          }
+
+
+          
+          return modItem;
+        });
+  
+        const clickedNode = element?.resourceUri ? this.getTreeItemByUri(element.resourceUri) : undefined;
+
+        if (clickedNode) {
+          clickedNode.children = includeNodes;
+          this._onDidChangeTreeData.fire(clickedNode);
+        }
+
+        return includeNodes; // Return the new nodes you want to add
+
+      });
+
+    }    
     else {
       console.log("getChildren: " + element.label )
       // Child nodes (topics within a topic map)
@@ -154,6 +204,43 @@ export class TopicMapsExplorer
     return [];
   }
 
+
+  // Command handler for opening a file
+  public openFile(resourceUri: vscode.Uri): void {
+
+    console.log("openFile:" + resourceUri)
+
+    vscode.workspace.fs.readFile(resourceUri).then(buffer => {
+      const fileContent = buffer.toString();
+      const includes = this.findIncludes(fileContent);
+
+      // Create new children nodes based on includes
+      const includeNodes = includes.map(include => {
+        // Create CustomTreeItem instances based on include paths
+        return new CustomTreeItem(include, vscode.TreeItemCollapsibleState.None);
+      });
+
+      const clickedNode = this.getTreeItemByUri(resourceUri);
+      if (clickedNode) {
+        clickedNode.children = includeNodes;
+        this._onDidChangeTreeData.fire(clickedNode);
+      }
+    });
+  }
+
+    // Function to find include statements in a file content
+    private findIncludes(fileContent: string): string[] {
+      // Implement your logic to parse includes from fileContent
+      // For example, you can use regular expressions or other parsing techniques
+      // and return an array of include paths.
+      //const regex = /include::modules\/([^[\]]+)\[\]/g;
+      const regex = /include::modules\/([^[\].]+)\.adoc/g;
+      const matches = fileContent.match(regex);
+      return matches ? matches.map(match => match.replace(/include::modules\//, '')) : [];
+    }
+  
+
+
   private createCustomTreeItem(
     topic: TopicMap,
     parentDir: string = ''
@@ -165,7 +252,7 @@ export class TopicMapsExplorer
         )
       : new CustomTreeItem(
           topic.File  + ".adoc",
-          vscode.TreeItemCollapsibleState.None
+          vscode.TreeItemCollapsibleState.Collapsed
         );
 
     const workspaceFolder = vscode.workspace.workspaceFolders
@@ -211,6 +298,15 @@ export class TopicMapsExplorer
       treeItem.resourceUri = vscode.Uri.parse(''); // Set to an empty Uri if workspaceFolder is undefined
     }
 
+
+        // Store the tree item in the mapping
+    this.uriToTreeItemMap.set(treeItem.resourceUri.toString(), treeItem);
+
     return treeItem;
   }
+
+    // Function to get a tree item based on its URI
+    public getTreeItemByUri(uri: vscode.Uri): CustomTreeItem | undefined {
+      return this.uriToTreeItemMap.get(uri.toString());
+    }
 }

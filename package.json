@@ -15,6 +15,14 @@
       ]
     }
   },
+  "commands": [
+    {
+      "command": "extension.openFile",
+      "title": "Open File",
+      "category": "My Extension"
+    }
+  ],
+  
   "scripts": {
     "compile": "tsc -watch -p ./",
     "prepublishOnly": "npm run compile"
