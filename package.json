@@ -5,6 +5,11 @@
     "vscode": "^1.74.2"
   },
   "main": "./out/extension.js",
+  "files": [
+    "out/**/*",
+    "node_modules/**/*",
+    "icons/**/*"  
+  ],
   "contributes": {
     "views": {
       "explorer": [

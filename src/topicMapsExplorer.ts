@@ -66,7 +66,7 @@ export class TopicMapsExplorer
   }
 
   getTreeItem(element: CustomTreeItem): vscode.TreeItem {
-    console.log("el: " + element.label)
+    //console.log("el: " + element.label)
     return element;
   }
 
@@ -74,7 +74,7 @@ export class TopicMapsExplorer
     element?: CustomTreeItem
   ): Thenable<CustomTreeItem[]> | CustomTreeItem[] {
     if (!element) {
-      console.log("getChildren: root")
+      // console.log("getChildren: root")
       // Top-level nodes (topic map files)
       const workspaceFolders = vscode.workspace.workspaceFolders;
       const topicMapsDirectory = workspaceFolders
@@ -116,7 +116,7 @@ export class TopicMapsExplorer
       // Logic to dynamically add children nodes for the given resourceUri
       // ...
   
-      console.log("openFile:" + element.resourceUri)
+      // console.log("openFile:" + element.resourceUri)
 
       vscode.workspace.fs.readFile(element.resourceUri).then(buffer => {
         const fileContent = buffer.toString();
@@ -125,7 +125,7 @@ export class TopicMapsExplorer
         // Create new children nodes based on includes
         const includeNodes = includes.map(include => {
           // Create CustomTreeItem instances based on include paths
-          const modItem =  new CustomTreeItem(include, vscode.TreeItemCollapsibleState.None);
+          const modItem =  new CustomTreeItem('Ⓜ️ ' + include, vscode.TreeItemCollapsibleState.None);
 
 
           const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -139,11 +139,16 @@ export class TopicMapsExplorer
             modItem.command = {
               command: 'vscode.open',
               title: 'Open File',
-              arguments: [modItem.resourceUri]          
+              arguments: [modItem.resourceUri]   
+            }       
+
+            
+            const moduleIconPath = vscode.Uri.file(this.context.asAbsolutePath('icons/transparent-icon.svg'));
+
+            modItem.iconPath = moduleIconPath;
+            //modItem.iconPath = vscode.ThemeIcon.File;
           }
-
-
-          
+         
           return modItem;
         });
   
@@ -217,7 +222,7 @@ export class TopicMapsExplorer
       // Create new children nodes based on includes
       const includeNodes = includes.map(include => {
         // Create CustomTreeItem instances based on include paths
-        return new CustomTreeItem(include, vscode.TreeItemCollapsibleState.None);
+        return new CustomTreeItem('Ⓜ️ ' + include, vscode.TreeItemCollapsibleState.None);
       });
 
       const clickedNode = this.getTreeItemByUri(resourceUri);
@@ -247,11 +252,11 @@ export class TopicMapsExplorer
   ): CustomTreeItem {
     const treeItem = topic.Dir
       ? new CustomTreeItem(
-          topic.Dir,
+          '🅓 ' + topic.Dir,
           vscode.TreeItemCollapsibleState.Collapsed
         )
       : new CustomTreeItem(
-          topic.File  + ".adoc",
+          '🅰️ ' + topic.File  + ".adoc",
           vscode.TreeItemCollapsibleState.Collapsed
         );
 
