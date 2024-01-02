@@ -235,12 +235,19 @@ export class TopicMapsExplorer
 
     // Function to find include statements in a file content
     private findIncludes(fileContent: string): string[] {
-      // Implement your logic to parse includes from fileContent
-      // For example, you can use regular expressions or other parsing techniques
-      // and return an array of include paths.
-      //const regex = /include::modules\/([^[\]]+)\[\]/g;
+
+
+      const noMultiCommentContent = fileContent.replace(/\/\/\/\/.*?\/\/\/\//gs, '');
+
+      console.log(noMultiCommentContent)
+
+      // Remove lines starting with //
+      const noSingleCommentContent = noMultiCommentContent.replace(/^\/\/.*$/gm, '');
+
+      console.log(noSingleCommentContent)
+
       const regex = /include::modules\/([^[\].]+)\.adoc/g;
-      const matches = fileContent.match(regex);
+      const matches = noSingleCommentContent.match(regex);
       return matches ? matches.map(match => match.replace(/include::modules\//, '')) : [];
     }
   
