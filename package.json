@@ -1,6 +1,6 @@
 {
   "name": "topic-maps-explorer",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.74.2"
   },
@@ -30,12 +30,15 @@
   "activationEvents": [
     "onFileSystem:workspaceFolders?/_topic_maps"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabriel-rh/topic-maps-explorer.git"
+  },
   "scripts": {
     "compile": "tsc -watch -p ./",
     "prepublishOnly": "npm run compile"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
     "@types/vscode": "^1.74.2",

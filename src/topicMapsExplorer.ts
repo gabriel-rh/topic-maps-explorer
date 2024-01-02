@@ -66,7 +66,6 @@ export class TopicMapsExplorer
   }
 
   getTreeItem(element: CustomTreeItem): vscode.TreeItem {
-    //console.log("el: " + element.label)
     return element;
   }
 
@@ -74,7 +73,6 @@ export class TopicMapsExplorer
     element?: CustomTreeItem
   ): Thenable<CustomTreeItem[]> | CustomTreeItem[] {
     if (!element) {
-      // console.log("getChildren: root")
       // Top-level nodes (topic map files)
       const workspaceFolders = vscode.workspace.workspaceFolders;
       const topicMapsDirectory = workspaceFolders
@@ -108,15 +106,11 @@ export class TopicMapsExplorer
       }
     } 
     else if (element.children)
-    {
-      console.log("getChildren: " + element.label )      
+    {      
       return element.children;
     }
     else if (element && element.resourceUri && element.resourceUri.toString() != 'invalid:') {
       // Logic to dynamically add children nodes for the given resourceUri
-      // ...
-  
-      // console.log("openFile:" + element.resourceUri)
 
       vscode.workspace.fs.readFile(element.resourceUri).then(buffer => {
         const fileContent = buffer.toString();
@@ -125,8 +119,7 @@ export class TopicMapsExplorer
         // Create new children nodes based on includes
         const includeNodes = includes.map(include => {
           // Create CustomTreeItem instances based on include paths
-          const modItem =  new CustomTreeItem('Ⓜ️ ' + include, vscode.TreeItemCollapsibleState.None);
-
+          const modItem =  new CustomTreeItem('Ⓜ ' + include, vscode.TreeItemCollapsibleState.None);
 
           const workspaceFolders = vscode.workspace.workspaceFolders;
           const modulesDirectory = workspaceFolders
@@ -142,11 +135,10 @@ export class TopicMapsExplorer
               arguments: [modItem.resourceUri]   
             }       
 
-            
             const moduleIconPath = vscode.Uri.file(this.context.asAbsolutePath('icons/transparent-icon.svg'));
 
             modItem.iconPath = moduleIconPath;
-            //modItem.iconPath = vscode.ThemeIcon.File;
+
           }
          
           return modItem;
@@ -159,13 +151,12 @@ export class TopicMapsExplorer
           this._onDidChangeTreeData.fire(clickedNode);
         }
 
-        return includeNodes; // Return the new nodes you want to add
+        return includeNodes; 
 
       });
 
     }    
     else {
-      console.log("getChildren: " + element.label )
       // Child nodes (topics within a topic map)
       const topicMapFile =
         typeof element.label === 'string' ? element.label : undefined;
@@ -210,44 +201,17 @@ export class TopicMapsExplorer
   }
 
 
-  // Command handler for opening a file
-  public openFile(resourceUri: vscode.Uri): void {
-
-    console.log("openFile:" + resourceUri)
-
-    vscode.workspace.fs.readFile(resourceUri).then(buffer => {
-      const fileContent = buffer.toString();
-      const includes = this.findIncludes(fileContent);
-
-      // Create new children nodes based on includes
-      const includeNodes = includes.map(include => {
-        // Create CustomTreeItem instances based on include paths
-        return new CustomTreeItem('Ⓜ️ ' + include, vscode.TreeItemCollapsibleState.None);
-      });
-
-      const clickedNode = this.getTreeItemByUri(resourceUri);
-      if (clickedNode) {
-        clickedNode.children = includeNodes;
-        this._onDidChangeTreeData.fire(clickedNode);
-      }
-    });
-  }
-
     // Function to find include statements in a file content
     private findIncludes(fileContent: string): string[] {
 
-
       const noMultiCommentContent = fileContent.replace(/\/\/\/\/.*?\/\/\/\//gs, '');
-
-      console.log(noMultiCommentContent)
 
       // Remove lines starting with //
       const noSingleCommentContent = noMultiCommentContent.replace(/^\/\/.*$/gm, '');
 
-      console.log(noSingleCommentContent)
-
       const regex = /include::modules\/([^[\].]+)\.adoc/g;
       const matches = noSingleCommentContent.match(regex);
+
       return matches ? matches.map(match => match.replace(/include::modules\//, '')) : [];
     }
   
@@ -259,12 +223,12 @@ export class TopicMapsExplorer
   ): CustomTreeItem {
     const treeItem = topic.Dir
       ? new CustomTreeItem(
-          '🅓 ' + topic.Dir,
+          topic.Dir,
           vscode.TreeItemCollapsibleState.Collapsed
         )
       : new CustomTreeItem(
-          '🅰️ ' + topic.File  + ".adoc",
-          vscode.TreeItemCollapsibleState.Collapsed
+          'Ⓐ ' + topic.File  + ".adoc",
+          vscode.TreeItemCollapsibleState.None
         );
 
     const workspaceFolder = vscode.workspace.workspaceFolders
@@ -299,9 +263,25 @@ export class TopicMapsExplorer
         treeItem.command = {
           command: 'vscode.open',
           title: 'Open File',
-          arguments: [treeItem.resourceUri]
-      };
-                  
+          arguments: [treeItem.resourceUri]        
+
+        };
+
+        vscode.workspace.fs.readFile(vscode.Uri.joinPath(topicFolderPath, `${topic.File}.adoc`)).then(buffer => {
+          const fileContent = buffer.toString();
+          const includes = this.findIncludes(fileContent);
+
+          if (includes.length > 0)
+          {
+            treeItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
+          }
+          else
+          {
+            treeItem.collapsibleState = vscode.TreeItemCollapsibleState.None
+            const transparentIconPath = vscode.Uri.file(this.context.asAbsolutePath('icons/transparent-icon.svg'));
+            treeItem.iconPath = transparentIconPath;
+          }
+        });
 
       }
 
@@ -311,7 +291,7 @@ export class TopicMapsExplorer
     }
 
 
-        // Store the tree item in the mapping
+    // Store the tree item in the mapping
     this.uriToTreeItemMap.set(treeItem.resourceUri.toString(), treeItem);
 
     return treeItem;
